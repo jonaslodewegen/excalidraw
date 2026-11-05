@@ -68,7 +68,9 @@ Merge rather than rebase, because `custom` is pushed and shared.
 
 A push to `custom` runs `.github/workflows/deploy-droplet.yml`: tests, then `yarn build:app:docker`, then a force-push of the output to the `deploy` branch, then SSH to the droplet. Don't use `yarn build` for this, because it enables tracking and Sentry reporting to Excalidraw's accounts.
 
-The SSH key can only run `/usr/local/bin/excalidraw-deploy` (source: `scripts/droplet/excalidraw-deploy.sh`), which checks out `deploy` into `/var/www/draw`, served at https://draw.jonaslodewegen.nl. Its git data is in `/opt/excalidraw-deploy.git`, outside the web folder. Changes to that script must be copied to the droplet by hand.
+The SSH key logs in as the non-root `deploy` user, which owns only `/var/www/draw` and `/opt/excalidraw-deploy.git`, and can only run `/usr/local/bin/excalidraw-deploy` (source: `scripts/droplet/excalidraw-deploy.sh`). That script checks out `deploy` into `/var/www/draw`, served at https://draw.jonaslodewegen.nl. Its git data is outside the web folder so it isn't publicly downloadable.
+
+Changes to that script must be copied to the droplet by hand, keeping it owned by root. To run it manually, use `runuser -l deploy -c /usr/local/bin/excalidraw-deploy`, because running it as root would leave root-owned files the `deploy` user can't replace.
 
 To roll back, revert the commit on `custom` and push.
 

@@ -1,13 +1,17 @@
 #!/bin/sh
 #
-# Runs on the droplet, installed as /usr/local/bin/excalidraw-deploy. It's started
-# by the GitHub Action over SSH, through a key that can only run this script.
+# Runs on the droplet as the non-root `deploy` user, installed root-owned as
+# /usr/local/bin/excalidraw-deploy so that user can't change it. It's started by
+# the GitHub Action over SSH, through a key that can only run this script.
 #
 # Publishes the latest build from the deploy branch to the web folder. The git
 # data lives outside that folder, as a .git folder there would be publicly
 # downloadable. Files the build doesn't track, such as .htaccess, are left alone.
 
 set -eu
+
+# Apache reads these files as another user
+umask 022
 
 GIT_DIR=/opt/excalidraw-deploy.git
 WEB_ROOT=/var/www/draw
