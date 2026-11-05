@@ -44,6 +44,34 @@ To see the full DOM in testing-library failures, run with `VITE_DEBUG_DOM=true`.
 
 PR titles must be semantic and scoped, e.g. `fix(editor): ...`. CI allows the scopes `app`, `editor`, `packages/excalidraw`, `packages/utils`, `docker` and `repo`.
 
+## Fork Workflow
+
+This is a personal fork. `upstream` is `excalidraw/excalidraw` and `origin` is the fork.
+
+- `master` is a clean mirror of upstream. Never commit to it directly.
+- `custom` holds all fork changes, and pushing to it deploys.
+- New features branch from `custom` and merge back into it.
+
+```bash
+# Pull upstream changes
+git fetch upstream
+git switch master && git merge --ff-only upstream/master && git push origin master
+git switch custom && git merge master   # resolve conflicts, run tests, then push to deploy
+
+# Start a new feature
+git switch -c feat/next-thing custom
+```
+
+Merge rather than rebase, because `custom` is pushed and shared.
+
+## Deployment
+
+A push to `custom` runs `.github/workflows/deploy-droplet.yml`: tests, then `yarn build:app:docker`, then a force-push of the output to the `deploy` branch, then SSH to the droplet. Don't use `yarn build` for this, because it enables tracking and Sentry reporting to Excalidraw's accounts.
+
+The SSH key can only run `/usr/local/bin/excalidraw-deploy` (source: `scripts/droplet/excalidraw-deploy.sh`), which checks out `deploy` into `/var/www/draw`, served at https://draw.jonaslodewegen.nl. Its git data is in `/opt/excalidraw-deploy.git`, outside the web folder. Changes to that script must be copied to the droplet by hand.
+
+To roll back, revert the commit on `custom` and push.
+
 ## Architecture
 
 ### Package boundaries

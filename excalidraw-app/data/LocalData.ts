@@ -119,7 +119,7 @@ const isQuotaExceededError = (error: any) => {
   );
 };
 
-type SavingLockTypes = "collaboration";
+type SavingLockTypes = "collaboration" | "sceneSwitch";
 
 export class LocalData {
   private static _save = debounce(

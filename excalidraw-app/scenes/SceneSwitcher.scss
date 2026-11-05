@@ -1,0 +1,111 @@
+.excalidraw {
+  .SceneSwitcher {
+    display: flex;
+    position: relative;
+  }
+
+  .SceneSwitcher__trigger.dropdown-menu-button {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    width: auto;
+    max-width: 12rem;
+    padding: 0 0.5rem 0 0.75rem;
+    font-size: 0.875rem;
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+  }
+
+  .SceneSwitcher__triggerName {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .SceneSwitcher__triggerIcon {
+    display: flex;
+    flex-shrink: 0;
+
+    svg {
+      width: 0.875rem;
+      height: 0.875rem;
+    }
+  }
+
+  .SceneSwitcher__menu {
+    width: 18rem;
+    max-width: calc(100vw - 2rem);
+  }
+
+  .SceneSwitcher__list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 50vh;
+    overflow-y: auto;
+  }
+
+  .SceneSwitcher__row {
+    display: flex;
+    align-items: stretch;
+    gap: 2px;
+  }
+
+  // The selectors below need the extra class to outrank the width and flex that
+  // the base dropdown styles set on every item, which would push the action
+  // buttons out of the row.
+  .SceneSwitcher__row .SceneSwitcher__sceneItem {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+
+    .dropdown-menu-item__text {
+      min-width: 0;
+      overflow: hidden;
+    }
+  }
+
+  .SceneSwitcher__row .SceneSwitcher__action {
+    flex: 0 0 2rem;
+    width: 2rem;
+    padding: 0;
+    justify-content: center;
+
+    .dropdown-menu-item__text {
+      display: flex;
+      flex: none;
+    }
+
+    svg {
+      display: block;
+      width: 1rem;
+      height: 1rem;
+    }
+  }
+
+  .SceneSwitcher__renameInput {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--default-border-color);
+    border-radius: var(--border-radius-md);
+    background: var(--input-bg-color);
+    color: var(--text-primary-color);
+    font-size: 1rem;
+
+    &:focus {
+      outline: 2px solid var(--color-primary);
+      outline-offset: -1px;
+    }
+  }
+
+  .SceneSwitcher__renameActions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+}
