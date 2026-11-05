@@ -148,6 +148,9 @@ import "./index.scss";
 
 import { ExcalidrawPlusPromoBanner } from "./components/ExcalidrawPlusPromoBanner";
 import { AppSidebar } from "./components/AppSidebar";
+import { SceneSwitcher } from "./scenes/SceneSwitcher";
+import { syncSceneIndexFromStorage } from "./scenes/sceneManager";
+import { getAllSceneFileIds } from "./scenes/sceneStore";
 
 import type { CollabAPI } from "./collab/Collab";
 
@@ -548,9 +551,16 @@ const ExcalidrawWrapper = () => {
           }
           // on fresh load, clear unused files from IDB (from previous
           // session)
-          LocalData.fileStorage.clearObsoleteFiles({
-            currentFileIds: fileIds,
-          });
+          //
+          // Images in inactive scenes must be kept too. If they can't be listed
+          // the cleanup is skipped, as it could otherwise delete them.
+          getAllSceneFileIds()
+            .then((sceneFileIds) =>
+              LocalData.fileStorage.clearObsoleteFiles({
+                currentFileIds: [...fileIds, ...sceneFileIds],
+              }),
+            )
+            .catch((error) => console.error(error));
         }
       }
     },
@@ -602,6 +612,8 @@ const ExcalidrawWrapper = () => {
         !document.hidden &&
         ((collabAPI && !collabAPI.isCollaborating()) || isCollabDisabled)
       ) {
+        syncSceneIndexFromStorage(excalidrawAPI);
+
         // don't sync if local state is newer or identical to browser state
         if (isBrowserStorageStateNewer(STORAGE_KEYS.VERSION_DATA_STATE)) {
           const localDataState = importFromLocalStorage();
@@ -1001,26 +1013,39 @@ const ExcalidrawWrapper = () => {
         theme={editorTheme}
         onThemeChange={setAppTheme}
         renderTopRightUI={(isMobile) => {
-          if (isMobile || !collabAPI || !isCollabAvailable) {
+          if (isMobile) {
             return null;
           }
 
           return (
             <div className="excalidraw-ui-top-right">
-              {excalidrawAPI?.getEditorInterface().formFactor === "desktop" && (
-                <ExcalidrawPlusPromoBanner
-                  isSignedIn={isExcalidrawPlusSignedUser}
+              {excalidrawAPI && (
+                <SceneSwitcher
+                  excalidrawAPI={excalidrawAPI}
+                  isCollaborating={isCollaborating}
                 />
               )}
+              {collabAPI && isCollabAvailable && (
+                <>
+                  {excalidrawAPI?.getEditorInterface().formFactor ===
+                    "desktop" && (
+                    <ExcalidrawPlusPromoBanner
+                      isSignedIn={isExcalidrawPlusSignedUser}
+                    />
+                  )}
 
-              {collabError.message && <CollabError collabError={collabError} />}
-              <LiveCollaborationTrigger
-                isCollaborating={isCollaborating}
-                onSelect={() =>
-                  setShareDialogState({ isOpen: true, type: "share" })
-                }
-                editorInterface={editorInterface}
-              />
+                  {collabError.message && (
+                    <CollabError collabError={collabError} />
+                  )}
+                  <LiveCollaborationTrigger
+                    isCollaborating={isCollaborating}
+                    onSelect={() =>
+                      setShareDialogState({ isOpen: true, type: "share" })
+                    }
+                    editorInterface={editorInterface}
+                  />
+                </>
+              )}
             </div>
           );
         }}
