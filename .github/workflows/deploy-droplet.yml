@@ -1,0 +1,67 @@
+name: Build and deploy to droplet
+
+on:
+  push:
+    branches: [custom]
+
+# Finish one deploy before starting the next, so an older build can't land last.
+concurrency:
+  group: deploy-droplet
+  cancel-in-progress: false
+
+permissions:
+  contents: write # to push the build to the deploy branch
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.x
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Test
+        run: yarn test:app --watch=false
+
+      # Not `yarn build`, which enables tracking and Sentry reporting to
+      # Excalidraw's own accounts.
+      - name: Build
+        run: |
+          yarn build:app:docker
+          yarn build:version
+
+      # Force-pushed as a single commit, so the repo doesn't keep every build.
+      - name: Publish build to the deploy branch
+        working-directory: excalidraw-app/build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git init -b deploy
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Build of ${GITHUB_SHA}"
+          git push --force \
+            "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+            deploy
+
+      # The key can only run the deploy script: authorized_keys restricts it with
+      # command="...". The host key is pinned, so the job can't be pointed at
+      # another server.
+      - name: Tell the droplet to pull the build
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o BatchMode=yes \
+            root@jonaslodewegen.nl
